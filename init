@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+
+function download_archive {
+	local SERVER="https://archives.t2t.io"
+	local DIR="toolchains"
+	local ARCHIVE=$1
+	local TARGET_DIR=$2
+	local TARGET_EXECUTABLE=$3
+	echo "downloading ${ARCHIVE} to ${TARGET_DIR}"
+	if [ ! -f "/tmp/${ARCHIVE}" ]; then
+		wget -O /tmp/${ARCHIVE} ${SERVER}/${DIR}/${ARCHIVE} || exit $?
+	fi
+	[ ! -f "${TARGET_EXECUTABLE}" ] && mkdir -p ${TARGET_DIR} && tar xvf /tmp/${ARCHIVE} -C ${TARGET_DIR} 2>&1 | awk '{printf "\t%s\n", $0}'
+}
+
+function download_llvm {
+	local VERSION=$1
+	local OS_KERNEL=$(uname -s | tr "[A-Z]" "[a-z]")
+	local ARCHIVE="llvm-${VERSION}-${OS_KERNEL}.tar.xz"
+	local TARGET_DIR="$(pwd)/llvm/${VERSION}/${OS_KERNEL}"
+	local TARGET_EXECUTABLE="${TARGET_DIR}/bin/llc"
+	download_archive ${ARCHIVE} ${TARGET_DIR} ${TARGET_EXECUTABLE}
+}
+
+function download_gcc {
+	local TARGET_TRIPLE=$1
+	local VERSION=$2
+	local BUILD=$3
+	local OS_KERNEL=$(uname -s | tr "[A-Z]" "[a-z]")
+	local ARCHIVE="gcc-${TARGET_TRIPLE}-${VERSION}-${BUILD}-${OS_KERNEL}.tar.xz"
+	local TARGET_DIR="$(pwd)/gcc/${TARGET_TRIPLE}/${VERSION}/${BUILD}/${OS_KERNEL}"
+	local TARGET_EXECUTABLE="${TARGET_DIR}/${TARGET_TRIPLE}/bin/gcc"
+	download_archive ${ARCHIVE} ${TARGET_DIR} ${TARGET_EXECUTABLE}
+}
+
+
+download_llvm "3.8.0"
+download_llvm "3.9.0"
+
+download_gcc "arm-none-eabi" "4.8" "2014q3"
